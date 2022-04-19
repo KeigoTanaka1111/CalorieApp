@@ -5,6 +5,8 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
+import Login from '../components/Login';
+import Logout from '../components/Logout';
 
 const Header = () => {
   return (
@@ -15,9 +17,8 @@ const Header = () => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" >
-            News
+            カロリー管理App
           </Typography>
-          <Button color="inherit">Login</Button>
         </Toolbar>
       </AppBar>
     </div>
