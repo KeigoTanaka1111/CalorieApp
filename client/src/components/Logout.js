@@ -1,10 +1,10 @@
 import React from 'react'
 import Button from '@mui/material/Button';
-import axios from "axios";
+// import axios from "axios";
 
-const Login = () => {
+const Login = (props) => {
   return (
-    <Button href="/logout">Logout</Button>
+    <Button href="/logout"  color={props.color}>Logout</Button>
   )
 }
 

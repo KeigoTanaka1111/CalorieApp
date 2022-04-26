@@ -2,14 +2,16 @@ const express = require("express");
 const mysql = require("mysql2");
 const cors = require('cors')
 
-const cookieSession = require('cookie-session');
-const passport = require("passport");
-const passportJwt = require('passport-jwt');
+// const passportJwt = require('passport-jwt');
 const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 const session = require('express-session');
+const cookieSession = require('cookie-session');
+const passport = require("passport");
+const app = express()
+
 const { PORT, SESSION_SECRET, CLIENT_ID, CALLBACK_URL, CLIENT_SECRET, COOKIE_KEYS } = require("./config/app.config.js").security;
 const { HOST, USER, DATABASE, PASSWORD } = require("./config/app.config.js").database;
-const app = express()
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const connection = mysql.createConnection({
@@ -26,19 +28,22 @@ app.disable("x-powered-by");
 app.use(cookieSession({
   name: 'session',
   keys: [COOKIE_KEYS],
-  maxAge: 24 * 60 * 60 * 1000 // 生存時間（ミリ秒），24 hours
+  // maxAge: 24 * 60 * 60 * 1000, // 生存時間（ミリ秒），24 hours,
+  maxAge: 24 // 生存時間（ミリ秒），24 hours
 }))
 
 
 app.use(passport.initialize());
-app.use(session({
+// app.use(session({
+//   secret: SESSION_SECRET,
+// }));
+app.use(passport.session({
   secret: SESSION_SECRET,
 }));
-app.use(passport.session());
 
-// ユーザ情報をセッションへ保存（シリアライズ）
+// ユーザ情報をセッションへ保存（シリアライズ）req.session.passport.userに入る
 passport.serializeUser((user, done) => {
-  done(null, user);
+  done(null, user.id);
 });
 
 // req.userにユーザ情報を格納
@@ -55,15 +60,25 @@ passport.use(new GoogleStrategy({
         if (profile) {
           console.log('ID: '+profile.id);
           console.log('Name: '+profile.displayName);
-          console.log('Email : '+profile.emails[0].value);
-          // MySQLのユーザテーブルにprofile.id登録（いなければ）
-          // ~下のみたいな(mongoDBの場合)
-          // User.findOne({ googleId: profile.id });
-          // if (exiting) {
-          //   return done(null, exiting);
-          // }
-          //   const user=await new User({ googleId: profile.id }).save();
-          //   done(null, user);
+          connection.query(`
+            SELECT EXISTS(SELECT * FROM user WHERE user_id = ${profile.id}) AS exist_check;
+            `,
+            (err, results, fields) => {
+              console.log(results)
+              if(results[0].exist_check == 0){// userに未登録のユーザならその情報を追加
+                connection.query(`
+                  INSERT INTO user VALUES(${profile.id}, 10);
+                  `,
+                  (err, results, fields) => {
+                    console.log("きちゃった")
+                  }
+                )
+              }
+              else{// テスト用
+                console.log("登録済みだよ")
+              }
+            }
+          )
           return done(null, profile);
         }
         else {
@@ -74,7 +89,8 @@ passport.use(new GoogleStrategy({
 
 //認証をgoogleにさせる
 app.get('/auth/google', passport.authenticate('google', {
-  scope: ["profile", "email"]
+  scope: ["profile"]
+  // scope: ["profile", "email"]
   // scope: ['https://www.googleapis.com/auth/plus.login']
 }));
 
@@ -91,25 +107,90 @@ app.get('/auth/google/callback',
 
 //ログアウト
 app.get('/logout', (req, res) => {
-  req.logout();
-  res.redirect('/');
+  req.session.destroy((err) => {
+    res.clearCookie('connect.sid');
+    res.redirect('/');
+  })
+  // req.logOut();
+  // res.redirect('/');
 });
 
-app.get("/api", (req, res) => {
-  console.log("Hello!");
+app.get("/registerFood", (req, res) => {
+  // console.log("registerFood!");
+  // console.log(req.query);
+  // query = `INSERT INTO food VALUES(0, "${req.query.foodName}", ${req.query.id}, ${req.query.foodCalorie});`
+  // console.log(query)
+  connection.query(
+    `INSERT INTO food VALUES(0, "${req.query.foodName}", ${req.query.id}, ${req.query.foodCalorie});`,
+    (err, results, fields) => {
+      // console.log(results);
+      res.send(results);
+    }
+  );
+});
+
+app.get("/registeredFood", (req, res) => {
+  connection.query(
+    `SELECT * FROM food WHERE user_id=${req.query.user_id};`,
+    (err, results, fields) => {
+      // console.log(results);
+      res.send(results);
+    }
+  );
+});
+
+app.get("/register", (req, res) => {
+  query = `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.query.user_id}, ${req.query.date});`
+  console.log(query)
+  connection.query(
+    `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.query.user_id}, "${req.query.date}");`,
+    (err, results, fields) => {
+      // console.log(results);
+      res.send(results);
+    }
+  );
+});
+
+app.get("/registered", (req, res) => {
+  connection.query(
+    `SELECT * FROM register WHERE user_id=${req.query.user_id};`,
+    (err, results, fields) => {
+      // console.log(results);
+      res.send(results);
+    }
+  );
+});
+
+app.get("/delete", (req, res) => {
+  connection.query(
+    `DELETE FROM register WHERE id=${req.query.id};`,
+    (err, results, fields) => {
+      console.log(results);
+      res.send(results);
+    }
+  );
+});
+app.get("/user", (req, res) => {
+  console.log(req.query.user_id)
+  connection.query(
+    `SELECT * FROM user WHERE user_id=${req.query.user_id};`,
+    (err, results, fields) => {
+      console.log(results);
+      res.send(results);
+    }
+  );
+});
+app.get("/registerDecrement", (req, res) => {
+  console.log("registerDecrementのregisterable:"+req.query.registerable)
+  connection.query(
+    `UPDATE user SET registerable=${req.query.registerable} WHERE user_id=${req.query.user_id};`,
+    (err, results, fields) => {
+      console.log(results);
+      res.send(results);
+    }
+  );
 });
 
 app.listen(PORT, () => {
   console.log(`listening port ${PORT}`)
 })
-
-// CREATE TABLE questions (id INT AUTO_INCREMENT, content varchar(255),genre varchar(255),level INT, PRIMARY KEY (id));
-// show tables;
-// select * from questions;
-// desc questions
-// ;
-// CREATE TABLE choices (id INT AUTO_INCREMENT, questions_id INT,is_answer varchar(255),content varchar(255), PRIMARY KEY (id));
-// show tables;
-
-// CREATE TABLE foods (id INT AUTO_INCREMENT, content varchar(255),genre varchar(255),level INT, PRIMARY KEY (id));
-// show tables;

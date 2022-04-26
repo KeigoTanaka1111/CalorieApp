@@ -1,7 +1,6 @@
 import React from 'react'
 
-import Login from '../components/Login'
-import Logout from '../components/Logout'
+import Register from "../components/Resister"
 
 const MainPage = () => {
   // const response = await axios.get("/phrase", {
@@ -9,8 +8,7 @@ const MainPage = () => {
   // });
   return (
     <div>
-      MainPage
-      <Logout />
+      <Register/>
     </div>
   )
 }
