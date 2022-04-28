@@ -28,8 +28,8 @@ app.disable("x-powered-by");
 app.use(cookieSession({
   name: 'session',
   keys: [COOKIE_KEYS],
-  // maxAge: 24 * 60 * 60 * 1000, // 生存時間（ミリ秒），24 hours,
-  maxAge: 24 // 生存時間（ミリ秒），24 hours
+  maxAge: 24 * 60 * 60 * 1000, // 生存時間（ミリ秒），24 hours,
+  // maxAge: 24 // 生存時間（ミリ秒）
 }))
 
 
@@ -107,10 +107,9 @@ app.get('/auth/google/callback',
 
 //ログアウト
 app.get('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    res.clearCookie('connect.sid');
-    res.redirect('/');
-  })
+  req.session = null;
+  res.clearCookie('connect.sid');
+  res.redirect('/');
   // req.logOut();
   // res.redirect('/');
 });
@@ -131,19 +130,19 @@ app.get("/registerFood", (req, res) => {
 
 app.get("/registeredFood", (req, res) => {
   connection.query(
-    `SELECT * FROM food WHERE user_id=${req.query.user_id};`,
+    `SELECT * FROM food WHERE user_id=${req.user};`,
+    // `SELECT * FROM food WHERE user_id=${req.query.user_id};`,
     (err, results, fields) => {
-      // console.log(results);
+      console.log("req.user:"+req.user);
       res.send(results);
     }
   );
 });
 
 app.get("/register", (req, res) => {
-  query = `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.query.user_id}, ${req.query.date});`
-  console.log(query)
   connection.query(
-    `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.query.user_id}, "${req.query.date}");`,
+    // `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.query.user_id}, "${req.query.date}");`,
+    `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.user}, "${req.query.date}");`,
     (err, results, fields) => {
       // console.log(results);
       res.send(results);
@@ -153,7 +152,8 @@ app.get("/register", (req, res) => {
 
 app.get("/registered", (req, res) => {
   connection.query(
-    `SELECT * FROM register WHERE user_id=${req.query.user_id};`,
+    `SELECT * FROM register WHERE user_id=${req.user};`,
+    // `SELECT * FROM register WHERE user_id=${req.query.user_id};`,
     (err, results, fields) => {
       // console.log(results);
       res.send(results);
@@ -165,17 +165,18 @@ app.get("/delete", (req, res) => {
   connection.query(
     `DELETE FROM register WHERE id=${req.query.id};`,
     (err, results, fields) => {
-      console.log(results);
+      // console.log(results);
       res.send(results);
     }
   );
 });
 app.get("/user", (req, res) => {
-  console.log(req.query.user_id)
+  console.log("req.user:"+req.user);
   connection.query(
-    `SELECT * FROM user WHERE user_id=${req.query.user_id};`,
+    // `SELECT * FROM user WHERE user_id=${req.query.user_id};`,
+    `SELECT * FROM user WHERE user_id=${req.user};`,
     (err, results, fields) => {
-      console.log(results);
+      // console.log(results);
       res.send(results);
     }
   );
@@ -183,9 +184,10 @@ app.get("/user", (req, res) => {
 app.get("/registerDecrement", (req, res) => {
   console.log("registerDecrementのregisterable:"+req.query.registerable)
   connection.query(
-    `UPDATE user SET registerable=${req.query.registerable} WHERE user_id=${req.query.user_id};`,
+    // `UPDATE user SET registerable=${req.query.registerable} WHERE user_id=${req.query.user_id};`,
+    `UPDATE user SET registerable=${req.query.registerable} WHERE user_id=${req.user};`,
     (err, results, fields) => {
-      console.log(results);
+      // console.log(results);
       res.send(results);
     }
   );

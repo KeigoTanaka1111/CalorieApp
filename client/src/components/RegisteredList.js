@@ -31,7 +31,6 @@ const RegisteredList = ( props ) => {
       params: { id: id}
     });
     const response = await axios.get("/registered", {
-      params: { user_id: "115447883818320632394"}
     });
     props.setRegisteredList(response.data)
   }
