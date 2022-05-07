@@ -27,8 +27,11 @@ const RegisteredList = ( props ) => {
 
   const handleDelete = async(id) => {
     // console.log(id)
-    await axios.get("/delete", {
-      params: { id: id}
+    // await axios.get("/delete", {
+    //   params: { id: id}
+    // });
+    await axios.post("/delete", {
+      id: id
     });
     const response = await axios.get("/registered", {
     });
@@ -37,10 +40,10 @@ const RegisteredList = ( props ) => {
   return (
     <>
       <FormControl variant="outlined">
-        <input className="form-control" type="date" variant="outlined" value={selectedDate} onChange={e=>onChangeselectedDate(e)}/>
+        <input type="date" variant="outlined" value={selectedDate} onChange={e=>onChangeselectedDate(e)}/>
       </FormControl>
       <TableContainer component={Paper}>
-        <Table hover>
+        <Table >
           <TableHead>
             <TableRow>
               <TableCell align="center" colSpan="2">食事名</TableCell>

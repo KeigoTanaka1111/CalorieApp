@@ -4,13 +4,19 @@ const cors = require('cors')
 
 // const passportJwt = require('passport-jwt');
 const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
-const session = require('express-session');
+// const session = require('express-session');
 const cookieSession = require('cookie-session');
 const passport = require("passport");
 const app = express()
 
 const { PORT, SESSION_SECRET, CLIENT_ID, CALLBACK_URL, CLIENT_SECRET, COOKIE_KEYS } = require("./config/app.config.js").security;
 const { HOST, USER, DATABASE, PASSWORD } = require("./config/app.config.js").database;
+const { SECRET_KEY } = require("./config/app.config.js").stripe;
+const stripe = require('stripe')(SECRET_KEY);
+
+/////
+// const { decycle, encycle } = require('json-cyclic');
+////
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -57,6 +63,10 @@ passport.use(new GoogleStrategy({
         callbackURL: CALLBACK_URL,
         proxy: true
     }, (accessToken, refreshToken, profile, done) => {
+      // if (err) {
+      //   console.warn("Failed to obtain access token: ", err);
+      //   // return app.error(app._createOAuthError('Failed to obtain access token', err));
+      // }
         if (profile) {
           console.log('ID: '+profile.id);
           console.log('Name: '+profile.displayName);
@@ -110,19 +120,30 @@ app.get('/logout', (req, res) => {
   req.session = null;
   res.clearCookie('connect.sid');
   res.redirect('/');
-  // req.logOut();
-  // res.redirect('/');
 });
 
-app.get("/registerFood", (req, res) => {
+// app.get("/registerFood", (req, res) => {
+//   // console.log("registerFood!");
+//   // console.log(req.query);
+//   query = `INSERT INTO food VALUES(0, "${req.query.foodName}", ${req.user}, ${req.query.foodCalorie});`
+//   console.log(query)
+//   connection.query(
+//     `INSERT INTO food VALUES(0, "${req.query.foodName}", ${req.user}, ${req.query.foodCalorie});`,
+//     (err, results, fields) => {
+//       console.log("registerFood:results"+results);
+//       res.send(results);
+//     }
+//   );
+// });
+app.post("/registerFood", (req, res) => {
   // console.log("registerFood!");
   // console.log(req.query);
-  // query = `INSERT INTO food VALUES(0, "${req.query.foodName}", ${req.query.id}, ${req.query.foodCalorie});`
-  // console.log(query)
+  query = `INSERT INTO food VALUES(0, "${req.body.foodName}", ${req.user}, ${req.body.foodCalorie});`
+  console.log(query)
   connection.query(
-    `INSERT INTO food VALUES(0, "${req.query.foodName}", ${req.query.id}, ${req.query.foodCalorie});`,
+    `INSERT INTO food VALUES(0, "${req.body.foodName}", ${req.user}, ${req.body.foodCalorie});`,
     (err, results, fields) => {
-      // console.log(results);
+      console.log("registerFood:results"+results);
       res.send(results);
     }
   );
@@ -133,18 +154,30 @@ app.get("/registeredFood", (req, res) => {
     `SELECT * FROM food WHERE user_id=${req.user};`,
     // `SELECT * FROM food WHERE user_id=${req.query.user_id};`,
     (err, results, fields) => {
-      console.log("req.user:"+req.user);
+      console.log("/registeredFood:req.user:"+req.user);
       res.send(results);
     }
   );
 });
 
-app.get("/register", (req, res) => {
+// app.get("/register", (req, res) => {
+//   console.log(`INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.user}, "${req.query.date}");`)
+//   connection.query(
+//     // `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.query.user_id}, "${req.query.date}");`,
+//     `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.user}, "${req.query.date}");`,
+//     (err, results, fields) => {
+//       console.log("register:"+results);
+//       res.send(results);
+//     }
+//   );
+// });
+app.post("/register", (req, res) => {
+  console.log(`INSERT INTO register VALUES(0, ${req.body.food_id}, ${req.user}, "${req.body.date}");`)
   connection.query(
     // `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.query.user_id}, "${req.query.date}");`,
-    `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.user}, "${req.query.date}");`,
+    `INSERT INTO register VALUES(0, ${req.body.food_id}, ${req.user}, "${req.body.date}");`,
     (err, results, fields) => {
-      // console.log(results);
+      console.log("register:"+results);
       res.send(results);
     }
   );
@@ -161,15 +194,25 @@ app.get("/registered", (req, res) => {
   );
 });
 
-app.get("/delete", (req, res) => {
+// app.get("/delete", (req, res) => {
+//   connection.query(
+//     `DELETE FROM register WHERE id=${req.query.id};`,
+//     (err, results, fields) => {
+//       // console.log(results);
+//       res.send(results);
+//     }
+//   );
+// });
+app.post("/delete", (req, res) => {
   connection.query(
-    `DELETE FROM register WHERE id=${req.query.id};`,
+    `DELETE FROM register WHERE id=${req.body.id};`,
     (err, results, fields) => {
       // console.log(results);
       res.send(results);
     }
   );
 });
+
 app.get("/user", (req, res) => {
   console.log("req.user:"+req.user);
   connection.query(
@@ -181,11 +224,22 @@ app.get("/user", (req, res) => {
     }
   );
 });
-app.get("/registerDecrement", (req, res) => {
-  console.log("registerDecrementのregisterable:"+req.query.registerable)
+// app.get("/registerDecrement", (req, res) => {
+//   console.log("registerDecrementのregisterable:"+req.query.registerable)
+//   connection.query(
+//     // `UPDATE user SET registerable=${req.query.registerable} WHERE user_id=${req.query.user_id};`,
+//     `UPDATE user SET registerable=${req.query.registerable} WHERE user_id=${req.user};`,
+//     (err, results, fields) => {
+//       // console.log(results);
+//       res.send(results);
+//     }
+//   );
+// });
+app.post("/registerDecrement", (req, res) => {
+  console.log("registerDecrementのregisterable:"+req.body.registerable)
   connection.query(
     // `UPDATE user SET registerable=${req.query.registerable} WHERE user_id=${req.query.user_id};`,
-    `UPDATE user SET registerable=${req.query.registerable} WHERE user_id=${req.user};`,
+    `UPDATE user SET registerable=${req.body.registerable} WHERE user_id=${req.user};`,
     (err, results, fields) => {
       // console.log(results);
       res.send(results);
@@ -193,6 +247,31 @@ app.get("/registerDecrement", (req, res) => {
   );
 });
 
+app.post("/api/stripe", async(req, res) => {
+  const charge = await stripe.charges.create({ //stripe.chargesとか調べる
+    amount: 100,
+    currency: "JPY",//日本円ならjpy
+    source: req.body.token.id,
+  });
+  // 今回はテスト用だけど，本来ならchargeをstripeAPIに送り，決済
+
+  // console.log("\n\n\n\n\n\n\n\n\n\n\n\n\n");
+  // console.log("stripe:registerable："+req.body.registerable);
+  // console.log("stripe:token："+JSON.stringify(req.body.token));
+  // console.log("stripe:registerable："+JSON.stringify(decycle(req.token)));
+  // console.log("\n\n\n\n\n\n\n\n\n\n\n\n\n");
+  // console.log("stripe:registerable："+req.body);
+  connection.query(
+    `UPDATE user SET registerable=${req.body.registerable + 10} WHERE user_id=${req.user};`,
+    (err, results, fields) => {
+      // console.log(results);
+      res.send(results);
+    }
+  );
+  // console.log(req);
+  console.log();
+});
+
 app.listen(PORT, () => {
-  console.log(`listening port ${PORT}`)
-})
+  console.log(`listening port ${PORT}`);
+});
