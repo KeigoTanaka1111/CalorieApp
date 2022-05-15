@@ -1,22 +1,19 @@
 const express = require("express");
 const mysql = require("mysql2");
-const cors = require('cors')
+const cors = require('cors');
 
 // const passportJwt = require('passport-jwt');
-const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 // const session = require('express-session');
 const cookieSession = require('cookie-session');
 const passport = require("passport");
+
 const app = express()
 
 const { PORT, SESSION_SECRET, CLIENT_ID, CALLBACK_URL, CLIENT_SECRET, COOKIE_KEYS } = require("./config/app.config.js").security;
 const { HOST, USER, DATABASE, PASSWORD } = require("./config/app.config.js").database;
 const { SECRET_KEY } = require("./config/app.config.js").stripe;
 const stripe = require('stripe')(SECRET_KEY);
-
-/////
-// const { decycle, encycle } = require('json-cyclic');
-////
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -38,12 +35,8 @@ app.use(cookieSession({
   // maxAge: 24 // 生存時間（ミリ秒）
 }))
 
-
 app.use(passport.initialize());
-// app.use(session({
-//   secret: SESSION_SECRET,
-// }));
-app.use(passport.session({
+app.use(passport.session({ // cookieSessionとかexpress-sessionの後に
   secret: SESSION_SECRET,
 }));
 
@@ -57,16 +50,15 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
+
 passport.use(new GoogleStrategy({
         clientID: CLIENT_ID,
         clientSecret: CLIENT_SECRET,
         callbackURL: CALLBACK_URL,
         proxy: true
     }, (accessToken, refreshToken, profile, done) => {
-      // if (err) {
-      //   console.warn("Failed to obtain access token: ", err);
-      //   // return app.error(app._createOAuthError('Failed to obtain access token', err));
-      // }
+      console.log("\n\n\naccessToken："+accessToken);
+      console.log("\n\n\profile："+profile);
         if (profile) {
           console.log('ID: '+profile.id);
           console.log('Name: '+profile.displayName);
@@ -97,22 +89,21 @@ passport.use(new GoogleStrategy({
     }
 ));
 
+
 //認証をgoogleにさせる
 app.get('/auth/google', passport.authenticate('google', {
   scope: ["profile"]
   // scope: ["profile", "email"]
-  // scope: ['https://www.googleapis.com/auth/plus.login']
 }));
 
 app.get('/auth/google/callback',
-    passport.authenticate('google',{
-      failureRedirect: '/',  // 失敗したときの遷移先
-    }),
-    (req, res) => {
-      // console.log(res.user)  // 認証に成功したときの処理
-      res.redirect('/main');
-    }
-
+  passport.authenticate('google',{//フォローアップリクエストで再確認
+    failureRedirect: '/',  // 失敗したときの遷移先
+  }),
+  (req, res) => {
+    // console.log(res.user)  // 認証に成功したときの処理
+    res.redirect('/main');
+  }
 );
 
 //ログアウト

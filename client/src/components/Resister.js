@@ -6,13 +6,12 @@ import { useForm } from 'react-hook-form';
 import  axios  from "axios";
 import Grid from "@mui/material/Grid";
 import styled from "styled-components";
-import StripeCheckout from "react-stripe-checkout"
+import StripeCheckout from "react-stripe-checkout";
 
 import RegisteredList from "./RegisteredList";
 const { PUB_KEY } = require("../config/app.config").stripe;
 
 const MainDiv = styled.div`
-  background-color: #ffe4c4;
   padding-top: 5%;
   height: 100vh;
   width: 100%;
