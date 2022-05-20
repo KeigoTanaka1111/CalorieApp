@@ -97,7 +97,7 @@ app.get('/auth/google', passport.authenticate('google', {
 }));
 
 app.get('/auth/google/callback',
-  passport.authenticate('google',{//フォローアップリクエストで再確認
+  passport.authenticate('google',{//フォローアップリクエストでcodeの値を再確認
     failureRedirect: '/',  // 失敗したときの遷移先
   }),
   (req, res) => {
@@ -263,6 +263,6 @@ app.post("/api/stripe", async(req, res) => {
   console.log();
 });
 
-app.listen(PORT, () => {
+app.listen(process.env.PORT || PORT, () => {
   console.log(`listening port ${PORT}`);
 });
