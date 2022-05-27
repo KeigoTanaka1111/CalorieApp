@@ -2,9 +2,7 @@ const express = require("express");
 const mysql = require("mysql2");
 const cors = require('cors');
 
-// const passportJwt = require('passport-jwt');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-// const session = require('express-session');
 const cookieSession = require('cookie-session');
 const passport = require("passport");
 
