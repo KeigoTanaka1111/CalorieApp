@@ -1,10 +1,9 @@
 import React from 'react'
 import Button from '@mui/material/Button';
-import axios from "axios";
 
-const Login = () => {
+const Login = (props) => {
   return (
-    <Button href="/auth/google">Login</Button>
+    <Button href="/auth/google" color={props.color}>Google Login</Button>
   )
 }
 

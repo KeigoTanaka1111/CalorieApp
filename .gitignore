@@ -3,7 +3,9 @@
 # dependencies
 /*/node_modules
 /*/config
+/*/public
 /.pnp
+/.ico
 .pnp.js
 
 # testing

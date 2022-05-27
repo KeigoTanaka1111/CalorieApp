@@ -1,18 +1,23 @@
 import React from 'react'
 
 import Login from '../components/Login'
-import Logout from '../components/Logout'
+import styled from "styled-components";
+
+// topページ
+const MainDiv = styled.div`
+  text-align: center;
+  padding: 100px, 50px, 50px, 50%;
+  position: relative;
+`
 
 const TopPage = () => {
-  // const response = await axios.get("/phrase", {
-  //   params: { genreState, questionsNumber },
-  // });
   return (
-    <div>
-      TopPage
+    <MainDiv>
+      <h1>
+      カロリー管理App
+      </h1>
       <Login />
-      <Logout />
-    </div>
+    </MainDiv>
   )
 }
 
