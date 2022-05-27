@@ -6,7 +6,6 @@ import Login from '../components/Login';
 import Logout from '../components/Logout';
 
 const Header = () => {
-  // useEffect(()=>{},[]);
   return (
     <div >
       <AppBar position="static">

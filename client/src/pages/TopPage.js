@@ -3,6 +3,7 @@ import React from 'react'
 import Login from '../components/Login'
 import styled from "styled-components";
 
+// topページ
 const MainDiv = styled.div`
   text-align: center;
   padding: 100px, 50px, 50px, 50%;

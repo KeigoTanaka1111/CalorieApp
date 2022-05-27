@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, Button } from "@mui/material";
+import { Card, CardContent, Button } from "@mui/material";
 import Typography from '@mui/material/Typography';
 import { Form, FormGroup } from "reactstrap";
 import { useForm } from 'react-hook-form';
@@ -19,100 +19,65 @@ const MainDiv = styled.div`
 `
 
 const  Resister = () => {
+  // 初回レンダリング時にユーザの登録内容を取得
   useEffect(() => {
     let unmounted = false;
 
     (async() => {
       if(!unmounted){
         const foodResponse = await axios.get("/registeredFood", {
-          // params: { user_id: "115447883818320632394"}
         });
-        // console.log("foodResponse：" +foodResponse);
         setUserFoodList(foodResponse.data);
 
         const userResponse = await axios.get("/user", {
-          // params: { user_id: "115447883818320632394"}
         });
-        // console.log(foodResponse.data)
-        // console.log("user:"+userResponse.data[0])
         setUser(userResponse.data[0]);
 
         const registerResponse = await axios.get("/registered", {
-          // params: { user_id: "115447883818320632394"}
         });
-        // console.log("registerResponse.data："+registerResponse.data);
         setRegistererList(registerResponse.data);
       }
     })();
     return () => {unmounted = true;}
   }, [])
+  // ユーザ
   const[user, setUser] = useState();
+  // 食事内容のList
   const[registererList, setRegistererList] = useState([]);
+  // 食品のリスト
   const[userFoodList, setUserFoodList] = useState([]);
   const {register: registerFood, handleSubmit: handleSubmitFood} = useForm();
   const {register, handleSubmit} = useForm();
 
   // stripe関連
-  // const [token, setToken] = useState("")
   const handleToken = async(token) =>{
-    // setToken(token)
-    console.log( "token"+token);
-    const response = await axios.post("/api/stripe",
+    // tokenをサーバに送信
+    await axios.post("/api/stripe",
       {token: token, registerable: user.registerable}
     );
     const userResponse = await axios.get("/user");
     setUser(userResponse.data[0]);
   }
-  // const addRegisterable = async() => {
-  //   console.log( "token"+token);
-  //   const response = await axios.post("/api/stripe",
-  //   token, {token: token, registerable: user.registerable});
-  // }
 
-
+  // 食事内容を登録
   const onSubmit = async({date, food_id}, e) => {
-    // await axios.get("/register", {
-    //   params: { food_id: food_id,
-    //             // user_id: "115447883818320632394",
-    //             date: date}
-    // });
     await axios.post("/register", {
       food_id: food_id,
       date: date
     });
     const response = await axios.get("/registered", {
-      // params: { user_id: "115447883818320632394"}
     });
-    // console.log(response.data)
     setRegistererList(response.data)
-    // console.log(registererList)
   }
+  // 食品を登録
   const onSubmitFood = async({foodName, foodCalorie}, e) => {
-    // console.log(foodName, foodCalorie);
-    // await axios.get("/registerFood", {
-    //   params: {
-    //             foodName: foodName,
-    //             foodCalorie: foodCalorie
-    //           }
-    // });
     await axios.post("/registerFood", {
       foodName: foodName,
       foodCalorie: foodCalorie
     });
     const response = await axios.get("/registeredFood", {
     });
-    // console.log(response.data)
-    setUserFoodList(response.data)
-    // console.log(userFoodList)
-    // console.log("user:"+user)
-    // console.log("registerable:"+user.registerable)
-    //登録可能数を減らす
-
-    // await axios.get("/registerDecrement", {
-    //   params: {
-    //     registerable: user.registerable-1
-    //   }
-    // });
+    setUserFoodList(response.data);
     await axios.post("/registerDecrement", {
       registerable: user.registerable-1
     });

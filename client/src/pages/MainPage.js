@@ -1,3 +1,4 @@
+// mainページ
 import React from 'react'
 import Register from "../components/Resister";
 import styled from "styled-components";
@@ -11,9 +12,6 @@ const MainDiv = styled.div`
 `
 
 const MainPage = () => {
-  // const response = await axios.get("/phrase", {
-  //   params: { genreState, questionsNumber },
-  // });
   return (
     <MainDiv>
       <Register/>

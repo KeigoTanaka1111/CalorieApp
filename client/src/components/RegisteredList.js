@@ -1,6 +1,4 @@
-import React, { useEffect, useState } from "react";
-import { Card, CardBody, Button } from "reactstrap";
-// import { Card, CardBody, Table } from "@material-ui/core";
+import React, {  useState } from "react";
 import { FormControl, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from "axios";
@@ -11,25 +9,19 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-// import { IconButton } from "@chakra-ui/react";
-// import { DeleteIcon } from "@chakra-ui/icons";
-
-// import {CardCard, CardTh} from "./UI/Card";
 
 const RegisteredList = ( props ) => {
+  // 合計カロリー
   let sum = 0
+  // 選択された日付
   const[selectedDate, setselectedDate] = useState("");
+  // 日付の更新
   const onChangeselectedDate = (e) => {
     setselectedDate(e.target.value)
     sum = 0
-    // console.log(e.target.value)
   }
-
+  // 指定された食事情報の削除
   const handleDelete = async(id) => {
-    // console.log(id)
-    // await axios.get("/delete", {
-    //   params: { id: id}
-    // });
     await axios.post("/delete", {
       id: id
     });
@@ -52,7 +44,7 @@ const RegisteredList = ( props ) => {
           </TableHead>
           <TableBody>
             {
-              props.registererList && props.registererList.map(({id, food_id, user_id, date}) => (
+              props.registererList && props.registererList.map(({id, food_id, date}) => (
                 selectedDate === date && (sum+=props.userFoodList.find((elem) => elem.food_id === food_id).calorie) && (
                 <TableRow key={id}>
                   <TableCell >

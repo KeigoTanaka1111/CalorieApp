@@ -17,13 +17,35 @@ const stripe = require('stripe')(SECRET_KEY);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const connection = mysql.createConnection({
-  host: HOST,
-  user: USER,
-  database: DATABASE,
-  password: PASSWORD,
-  multipleStatements: true,// ';'区切りで，複数のクエリを一度に送信可能
-});
+// MySQLとのコネクションの確立，切れた場合は再接続
+const handleDisconnect = () => {
+  connection = mysql.createConnection({
+    host: HOST,
+    user: USER,
+    database: DATABASE,
+    password: PASSWORD,
+    multipleStatements: true,// ';'区切りで，複数のクエリを一度に送信可能
+  });
+  //connection取得
+  connection.connect((err) => {
+    if (err) {
+      console.log('ERROR.CONNECTION_DB: ', err);
+      setTimeout(handleDisconnect, 1000);
+    }
+  });
+  //error('PROTOCOL_CONNECTION_LOST')時に再接続
+  connection.on('error', (err) => {
+    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+      console.log('ERROR.CONNECTION_LOST: ', err);
+      handleDisconnect();
+    } else {
+      throw err;
+    }
+  });
+}
+
+handleDisconnect();
+
 app.use(cors());
 app.use(require('cookie-parser')());
 app.use(require('body-parser').urlencoded({ extended: true }));
@@ -50,18 +72,17 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-
+/*
+GoogleStrategyの作成
+新規ユーザならuserテーブルに追加
+*/
 passport.use(new GoogleStrategy({
         clientID: CLIENT_ID,
         clientSecret: CLIENT_SECRET,
         callbackURL: CALLBACK_URL,
         proxy: true
     }, (accessToken, refreshToken, profile, done) => {
-      console.log("\n\n\naccessToken："+accessToken);
-      console.log("\n\n\profile："+profile);
         if (profile) {
-          console.log('ID: '+profile.id);
-          console.log('Name: '+profile.displayName);
           connection.query(`
             SELECT EXISTS(SELECT * FROM user WHERE user_id = ${profile.id}) AS exist_check;
             `,
@@ -72,12 +93,12 @@ passport.use(new GoogleStrategy({
                   INSERT INTO user VALUES(${profile.id}, 10);
                   `,
                   (err, results, fields) => {
-                    console.log("きちゃった")
+                    console.log("新規登録:"+profile.id)
                   }
                 )
               }
               else{// テスト用
-                console.log("登録済みだよ")
+                // console.log("登録済み")
               }
             }
           )
@@ -93,7 +114,6 @@ passport.use(new GoogleStrategy({
 //認証をgoogleにさせる
 app.get('/auth/google', passport.authenticate('google', {
   scope: ["profile"]
-  // scope: ["profile", "email"]
 }));
 
 app.get('/auth/google/callback',
@@ -113,156 +133,99 @@ app.get('/logout', (req, res) => {
   res.redirect('/');
 });
 
-// app.get("/registerFood", (req, res) => {
-//   // console.log("registerFood!");
-//   // console.log(req.query);
-//   query = `INSERT INTO food VALUES(0, "${req.query.foodName}", ${req.user}, ${req.query.foodCalorie});`
-//   console.log(query)
-//   connection.query(
-//     `INSERT INTO food VALUES(0, "${req.query.foodName}", ${req.user}, ${req.query.foodCalorie});`,
-//     (err, results, fields) => {
-//       console.log("registerFood:results"+results);
-//       res.send(results);
-//     }
-//   );
-// });
+// 食品名とカロリーをuserに紐付けて登録
 app.post("/registerFood", (req, res) => {
-  // console.log("registerFood!");
-  // console.log(req.query);
   query = `INSERT INTO food VALUES(0, "${req.body.foodName}", ${req.user}, ${req.body.foodCalorie});`
   console.log(query)
   connection.query(
     `INSERT INTO food VALUES(0, "${req.body.foodName}", ${req.user}, ${req.body.foodCalorie});`,
     (err, results, fields) => {
-      console.log("registerFood:results"+results);
       res.send(results);
     }
   );
 });
 
+// ユーザが登録した食品情報を取得
 app.get("/registeredFood", (req, res) => {
   connection.query(
     `SELECT * FROM food WHERE user_id=${req.user};`,
-    // `SELECT * FROM food WHERE user_id=${req.query.user_id};`,
     (err, results, fields) => {
-      console.log("/registeredFood:req.user:"+req.user);
       res.send(results);
     }
   );
 });
 
-// app.get("/register", (req, res) => {
-//   console.log(`INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.user}, "${req.query.date}");`)
-//   connection.query(
-//     // `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.query.user_id}, "${req.query.date}");`,
-//     `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.user}, "${req.query.date}");`,
-//     (err, results, fields) => {
-//       console.log("register:"+results);
-//       res.send(results);
-//     }
-//   );
-// });
+// 食事内容(食品情報，日付など)を登録
 app.post("/register", (req, res) => {
-  console.log(`INSERT INTO register VALUES(0, ${req.body.food_id}, ${req.user}, "${req.body.date}");`)
   connection.query(
-    // `INSERT INTO register VALUES(0, ${req.query.food_id}, ${req.query.user_id}, "${req.query.date}");`,
     `INSERT INTO register VALUES(0, ${req.body.food_id}, ${req.user}, "${req.body.date}");`,
     (err, results, fields) => {
-      console.log("register:"+results);
       res.send(results);
     }
   );
 });
 
+// ユーザの食事内容一覧を取得
 app.get("/registered", (req, res) => {
   connection.query(
     `SELECT * FROM register WHERE user_id=${req.user};`,
     // `SELECT * FROM register WHERE user_id=${req.query.user_id};`,
     (err, results, fields) => {
-      // console.log(results);
+      console.log("registered:"+JSON.stringify(results));
       res.send(results);
     }
   );
 });
 
-// app.get("/delete", (req, res) => {
-//   connection.query(
-//     `DELETE FROM register WHERE id=${req.query.id};`,
-//     (err, results, fields) => {
-//       // console.log(results);
-//       res.send(results);
-//     }
-//   );
-// });
+// 選択された食事内容を削除
 app.post("/delete", (req, res) => {
   connection.query(
     `DELETE FROM register WHERE id=${req.body.id};`,
     (err, results, fields) => {
-      // console.log(results);
       res.send(results);
     }
   );
 });
 
+// ユーザ情報を取得
 app.get("/user", (req, res) => {
-  console.log("req.user:"+req.user);
   connection.query(
-    // `SELECT * FROM user WHERE user_id=${req.query.user_id};`,
     `SELECT * FROM user WHERE user_id=${req.user};`,
     (err, results, fields) => {
-      // console.log(results);
-      res.send(results);
-    }
-  );
-});
-// app.get("/registerDecrement", (req, res) => {
-//   console.log("registerDecrementのregisterable:"+req.query.registerable)
-//   connection.query(
-//     // `UPDATE user SET registerable=${req.query.registerable} WHERE user_id=${req.query.user_id};`,
-//     `UPDATE user SET registerable=${req.query.registerable} WHERE user_id=${req.user};`,
-//     (err, results, fields) => {
-//       // console.log(results);
-//       res.send(results);
-//     }
-//   );
-// });
-app.post("/registerDecrement", (req, res) => {
-  console.log("registerDecrementのregisterable:"+req.body.registerable)
-  connection.query(
-    // `UPDATE user SET registerable=${req.query.registerable} WHERE user_id=${req.query.user_id};`,
-    `UPDATE user SET registerable=${req.body.registerable} WHERE user_id=${req.user};`,
-    (err, results, fields) => {
-      // console.log(results);
       res.send(results);
     }
   );
 });
 
+// 登録可能数を1減らす
+app.post("/registerDecrement", (req, res) => {
+  connection.query(
+    `UPDATE user SET registerable=${req.body.registerable} WHERE user_id=${req.user};`,
+    (err, results, fields) => {
+      res.send(results);
+    }
+  );
+});
+
+// stripeによる決済（test）
 app.post("/api/stripe", async(req, res) => {
   const charge = await stripe.charges.create({ //stripe.chargesとか調べる
     amount: 100,
     currency: "JPY",//日本円ならjpy
     source: req.body.token.id,
   });
-  // 今回はテスト用だけど，本来ならchargeをstripeAPIに送り，決済
-
-  // console.log("\n\n\n\n\n\n\n\n\n\n\n\n\n");
-  // console.log("stripe:registerable："+req.body.registerable);
-  // console.log("stripe:token："+JSON.stringify(req.body.token));
-  // console.log("stripe:registerable："+JSON.stringify(decycle(req.token)));
-  // console.log("\n\n\n\n\n\n\n\n\n\n\n\n\n");
-  // console.log("stripe:registerable："+req.body);
+  // 今回はテスト用だが，本来なら上のchargeをstripeAPIに送り，決済
+  //登録可能数を10増やす
   connection.query(
     `UPDATE user SET registerable=${req.body.registerable + 10} WHERE user_id=${req.user};`,
     (err, results, fields) => {
-      // console.log(results);
       res.send(results);
     }
   );
-  // console.log(req);
-  console.log();
 });
-
-app.listen(process.env.PORT || PORT, () => {
+app.get('*', (req, res, next) => {
+  res.sendFile('index.html', {root: 'public'});  //クライアントにindex.html
+});
+app.listen(process.env.PORT ||PORT, () => {
   console.log(`listening port ${PORT}`);
 });
