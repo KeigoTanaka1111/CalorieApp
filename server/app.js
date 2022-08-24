@@ -17,7 +17,7 @@ const stripe = require('stripe')(SECRET_KEY);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// MySQLとのコネクションの確立，切れた場合は再接続
+// MySQLとのコネクションの確立，切れた場合は再接続する
 const handleDisconnect = () => {
   connection = mysql.createConnection({
     host: HOST,
@@ -59,7 +59,7 @@ app.use(cookieSession({
 
 app.use(passport.initialize());
 app.use(passport.session({ // cookieSessionとかexpress-sessionの後に
-  secret: SESSION_SECRET,
+  // secret: SESSION_SECRET,
 }));
 
 // ユーザ情報をセッションへ保存（シリアライズ）req.session.passport.userに入る
